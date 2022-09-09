@@ -126,7 +126,41 @@ app.post('/values', async (req, res) => {
 
 });
 
+app.get('/values', async (req, res) => {
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '');
 
+    if(!token) {
+        return res.sendStatus(401);
+    }
+
+    try {
+        const session = await db.collection('sessions').findOne({ token });
+
+        if(!session) {
+            return res.sendStatus(401);
+        }
+
+        const user = await db.collection('users').findOne({
+            _id: session.userId
+        });
+
+        if(user) {
+            const values = await db.collection('values').find({
+                userId: user._id
+            }).toArray()
+    
+            res.send(values);
+
+        } else {
+            res.sendStatus(401);
+        }
+
+    } catch (error) {
+        res.status(500).send(error.message); 
+    }
+    
+});
 
 app.listen(5000, () => console.log('Listen on 5000'));
 
