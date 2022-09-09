@@ -52,7 +52,6 @@ app.post('/auth/sign-up', async (req, res) => {
 
         await db.collection('users').insertOne({...user, password: passwordHash });
 
-        console.log(user)
         res.sendStatus(201);
 
     } catch (error) {
@@ -69,7 +68,7 @@ app.post('/auth/sign-in', async (req, res) => {
         const token = uuid();
 
         await db.collection('sessions').insertOne({
-            userID: user._id,
+            userId: user._id,
             token
         })
 
@@ -81,23 +80,51 @@ app.post('/auth/sign-in', async (req, res) => {
 
 });
 
-app.post('/value', async (req, res) => {
+/* Values Routes */ 
+
+const valueSchema = joi.object({
+    value: joi.number().required(),
+    text: joi.string().required(),
+    type: joi.valid('entry', 'out').required()
+})
+
+app.post('/values', async (req, res) => {
     const { authorization } = req.headers;
+    const { value, text, type } = req.body;
     const token = authorization?.replace('Bearer ', '');
 
-    if(!token) {
-        res.sendStatus(401);
+    const validation = valueSchema.validate(req.body, { abortEarly: false });
+
+    if(validation.error) {
+        const error = validation.error.details.map(value => value.message);
+        return res.status(422).send(error);
     }
 
-    const session = await db.collection('sessions').findOne({ token });
+    if(!token) {
+        return res.sendStatus(401);
+    }
 
-    
+    try {
+        const session = await db.collection('sessions').findOne({ token });
+
+        if(!session) {
+            return res.sendStatus(402);
+        }
+        
+        const created = await db.collection('values').insertOne({
+            value,
+            text,
+            type,
+            userId: ObjectId(session.userId)
+        });
+
+        res.sendStatus(201);
+        
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+
 });
-
-
-
-
-
 
 
 
