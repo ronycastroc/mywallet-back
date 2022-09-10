@@ -13,7 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-let date = dayjs().locale('pt-br').format('HH.mm.ss');
+let date = dayjs().locale('pt-br').format('DD/MM');
 
 const mongoClient = new MongoClient(process.env.MONGO_URI);
 let db;
@@ -72,7 +72,12 @@ app.post('/auth/sign-in', async (req, res) => {
             token
         })
 
-        res.send(token);
+        delete user.password
+        
+        res.send({
+            ...user,
+            token,
+        });
 
     } else {
         res.sendStatus(409);
@@ -115,7 +120,8 @@ app.post('/values', async (req, res) => {
             value,
             text,
             type,
-            userId: ObjectId(session.userId)
+            userId: ObjectId(session.userId),
+            date,
         });
 
         res.sendStatus(201);
