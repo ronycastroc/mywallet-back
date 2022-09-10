@@ -168,5 +168,32 @@ app.get('/values', async (req, res) => {
     
 });
 
+app.delete('/values/:id', async (req, res) => {
+    const { id } = req.params;
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '');
+
+
+    if(!token) {
+        return res.sendStatus(401);
+    }
+
+    try {
+        const findValue = await db.collection('values').findOne({_id: new ObjectId(id)});
+
+        if(!findValue) {
+            return res.sendStatus(404);
+        }
+
+        await db.collection('values').deleteOne({_id: new ObjectId(id)});
+
+        res.sendStatus(200);
+
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+
+})
+
 app.listen(5000, () => console.log('Listen on 5000'));
 
