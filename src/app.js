@@ -168,6 +168,40 @@ app.get('/values', async (req, res) => {
     
 });
 
+app.put('/values/:id', async (req, res) => {
+    const { id } = req.params;
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '');
+    const { value, text, type } = req.body;
+
+    const validation = valueSchema.validate(req.body, {abortEarly: false });
+
+    if(validation.error) {
+        const error = validation.error.details.map(value => value.message);
+        return res.status(422).send(error);
+    }
+
+    if (!token) {
+        return res.sendStatus(401);
+    }
+
+    try {
+        await db.collection('values').updateOne({
+            _id: new ObjectId(id)
+        }, {
+            $set: {
+                value,
+                text,
+                type
+            }
+        })
+
+        res.sendStatus(200);
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+})
+
 app.delete('/values/:id', async (req, res) => {
     const { id } = req.params;
     const { authorization } = req.headers;
